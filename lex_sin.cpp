@@ -1220,8 +1220,7 @@ int iteration_statement(char place[MAX_CODE], char code[MAX_CODE]){
                                         sprintf(code, "%s\n%s:", code, loop_label);
                                     }
                                     sprintf(code, "%s\n%s\n%s:%s\nGOTO %s\n%s:", code, st_code, inc_label, increase_code, loop_label, end_label);
-                                    // sprintf(code, "INIT: %s\n\nLOOP:%s\nGOTOFALSE END\n%s\nINCREASE:%s\nGOTO LOOP\nEND:", initializing_code, loop_code, st_code, increase_code);
-                                    fprintf(arq_intermediario, code);
+                                    //fprintf(arq_intermediario, code);
                                     return 1;
                                 }
                             }
@@ -1490,8 +1489,10 @@ int statement_list(char place[MAX_CODE], char code[MAX_CODE]){
     int success = 0;
 
     char s_place[MAX_CODE], s_code[MAX_CODE];
+    strcpy(s_code, "");
     while (tk != TKEOF && statement(s_place, s_code)) {
-        // sprintf(code, "\n%s\n%s", code, s_code);
+        if (strcmp(code,"") != 0 || strcmp(s_code,"") != 0)
+            sprintf(code, "%s\n%s", code, s_code);
         success = 1; // reconheceu pelo menos um statement
     }
 
@@ -1521,8 +1522,12 @@ int main()
     // if (P())
     char place[MAX_CODE];
     char code[MAX_CODE];
-    if (statement_list(place, code))
+    strcpy(code, "");
+    strcpy(place, "");
+    if (statement_list(place, code)){
         printf("Compilado com sucesso!");
+        fprintf(arq_intermediario, code);
+    }
     // else printf("Faca os ajustes no token %s (%s) e tente compilar novamente", tokens[tk-1], lex);
 
     fclose(arq_intermediario);
