@@ -1,0 +1,27 @@
+lbl000:
+T000:=5
+ini:=T000
+T001:=10
+fim:=T001
+lbl001: 
+
+T002:=ini < fim
+
+T003:=5
+T004:=fim > T003
+GOFALSE lbl003
+
+
+T005:=1
+T006:=b + T005
+a:=T006
+
+
+T007:=c + d
+c:=T007
+lbl002:
+INC ini
+
+DEC fim
+GOTO lbl001
+lbl003:
