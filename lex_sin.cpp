@@ -578,7 +578,10 @@ int primary_expression(char place[MAX_CODE], char code[MAX_CODE]){
     if (DEBUG_MODE) printf("Primary expression\n");
     if (tk == TKId || tk == TKCteInt || tk == TKCteFloat || tk == TKConstChar){
         if (tk == TKId){
+            
+            printf("\n\n%s\n\n", lex);
             strcpy(place, lex); //lex é o id
+            printf("PASSADO");
             strcpy(code, ""); //lex é o id
         }else if (tk == TKCteInt || tk == TKCteFloat || tk == TKConstChar){
             char *temp = gera_temp();
@@ -605,31 +608,37 @@ int primary_expression(char place[MAX_CODE], char code[MAX_CODE]){
     return 0;
 }
 
-int assignment_expression();
+int assignment_expression(char place[MAX_CODE], char code[MAX_CODE]);
 int postfix_expression(char place[MAX_CODE], char code[MAX_CODE]);
 int pointer();
 
-int argument_expression_list(char code[MAX_CODE]){
+int argument_expression_list(char code[MAX_CODE], int *cont){
     if (DEBUG_MODE) printf("argument_expression_list");
     int retorno = 0;
     char e_place[MAX_CODE], e_code[MAX_CODE];
-    if (expression(e_place, e_code)){
-        sprintf(code, "%s\nparam %s", e_code, e_place);
+    if (assignment_expression(e_place, e_code)){
+        sprintf(code, "%s\n%s\nparam %s", code, e_code, e_place);
+        (*cont)++;
         retorno = 1;
         while(tk == TKVirgula){
             getToken();
-            if(!expression(e_place, e_code))
+            if(!assignment_expression(e_place, e_code))
             { 
                 retorno = 0; 
                 break; 
             }
-            sprintf(code, "%s\nparam %s", e_code, e_place);
+            sprintf(code, "%s\n%s\nparam %s", code, e_code, e_place);
+            (*cont)++;
+            //fprintf(arq_intermediario, "CONTANDO");
         }
     }
 
     return retorno;
 }
 
+int comma(char place[MAX_CODE], char code[MAX_CODE]);
+
+int left_mode=0;
 int postfix_expression(char place[MAX_CODE], char code[MAX_CODE]){ 
     if (DEBUG_MODE) printf("POSTFIX\n");
 
@@ -641,7 +650,7 @@ int postfix_expression(char place[MAX_CODE], char code[MAX_CODE]){
         if (tk == TKAbreColchete){                // E1 [ E2 ]
             getToken();
             char idx_place[MAX_CODE], idx_code[MAX_CODE];
-            if (!expression(idx_place, idx_code)){
+            if (!comma(idx_place, idx_code)){
                 error("expression inside []");
                 return 0;
             }
@@ -652,9 +661,12 @@ int postfix_expression(char place[MAX_CODE], char code[MAX_CODE]){
             getToken();
 
             // t := base [ idx ]
-            char *t = gera_temp();
-            sprintf(code, "%s\n%s\n%s := %s [ %s ]", code, idx_code, t, place, idx_place);
-            strcpy(place, t);
+            char *temp1 = gera_temp();
+            char *temp2 = gera_temp();
+            sprintf(code, "%s\n%s\n%s := %s * 4\n%s := %s[ %s ]", code, idx_code, temp1, idx_place, temp2, place, temp1);
+            //fprintf(arq_intermediario, code);
+            if (left_mode) strcpy(place, temp1); 
+            else strcpy(place, temp2);
             continue;
         }
         else if (tk == TKAbrePar){                // chamada de função
@@ -665,11 +677,12 @@ int postfix_expression(char place[MAX_CODE], char code[MAX_CODE]){
             int narg = 0;
             char args_code[MAX_CODE]; args_code[0] = '\0';
 
+            int cont_ = 0;
             if (tk == TKFechaPar){               // chamada vazia f()
                 getToken();
             } else {
                 // tenta parse + geração de params
-                if (argument_expression_list(args_code) || tk != TKFechaPar){
+                if (!argument_expression_list(args_code,&cont_) || tk != TKFechaPar){
                     // restaura se falhar
                     fseek(arqin,cont.posglobal,SEEK_SET);
                     c=cont.cant; tk=cont.tkant;
@@ -680,12 +693,13 @@ int postfix_expression(char place[MAX_CODE], char code[MAX_CODE]){
 
                 // anexa código dos args
                 sprintf(code, "%s\n%s", code, args_code);
+                // sprintf(place, );
             }
 
             // place contém o "nome" da função se primary era TKId; se não, é um temp com ponteiro p/ função.
             // Para função nomeada, call <place>, narg
             char *tret = gera_temp();
-            sprintf(code, "%s\ncall %s, %d\n%s := RET", code, place, narg, tret);
+            sprintf(code, "%s\n%s := call %s, %d", code, tret, place, cont_);
             strcpy(place, tret);
             continue;
         }
@@ -1030,6 +1044,7 @@ int assignment_expression(char place[MAX_CODE], char code[MAX_CODE]){
     if (tk == TKId){
         char id[50];
         strcpy(id, lex);
+        int last_token = tk;
         getToken();
         if(tk == TKAtrib || tk ==TKAtribAnd || tk ==TKAtribDiv || tk ==TKAtribLeftShift
             ||  tk ==TKAtribMais ||  tk ==TKAtribMenos || tk ==TKAtribMod || tk ==TKAtribOr
@@ -1046,6 +1061,33 @@ int assignment_expression(char place[MAX_CODE], char code[MAX_CODE]){
 
                 // fprintf(arq_intermediario, code);
                 return 1;
+            }
+        } else if (tk == TKAbreColchete){
+            fseek(arqin,cont.posglobal,SEEK_SET);
+            c=cont.cant;
+            tk=cont.tkant;
+            strcpy(lex,cont.lexant);
+            col = cont.coluna;
+            left_mode = 1;
+            char pf_code[MAX_CODE], pf_place[MAX_CODE];
+            if (postfix_expression(pf_place,pf_code)){
+                left_mode = 0;
+                if (tk == TKAtrib || tk ==TKAtribAnd || tk ==TKAtribDiv || tk ==TKAtribLeftShift
+                    ||  tk ==TKAtribMais ||  tk ==TKAtribMenos || tk ==TKAtribMod || tk ==TKAtribOr
+                    || tk ==TKAtribProd  || tk ==TKAtribRightShift){
+            
+                getToken();
+                char ae1_place[MAX_CODE], ae1_code[MAX_CODE];
+                if(assignment_expression(ae1_place, ae1_code)){   
+                    // char code[256];
+                    sprintf(code, "%s\n%s\n%s[%s]:=%s", pf_code, ae1_code, id, pf_place, ae1_place);
+                    strcpy(place, id);
+                    // printf("%s", code);
+
+                    // fprintf(arq_intermediario, code);
+                    return 1;
+                }
+            }
             }
         }
     }

@@ -1,3 +1,14 @@
+TKInt identified in 'int', at line 1 and column 1
+TKId identified in 'inteiro', at line 1 and column 5
+TKAtrib identified in '=', at line 1 and column 13
+TKCteInt identified in '0', at line 1 and column 15
+TKPontoEVirgula identified in ';', at line 1 and column 16
+TKId identified in 'a', at line 2 and column 1
+TKAtrib identified in '=', at line 2 and column 3
+TKCteInt identified in '1', at line 2 and column 5
+TKMais identified in '+', at line 2 and column 7
+TKCteInt identified in '4', at line 2 and column 9
+TKPontoEVirgula identified in ';', at line 2 and column 10
 TKInt identified in 'int', at line 3 and column 1
 TKId identified in 'ini', at line 3 and column 5
 TKPontoEVirgula identified in ';', at line 3 and column 8
